@@ -7,9 +7,9 @@ While Emby and Jellyfin share a common API heritage, they have diverged in how t
 ***
 ## Key Differences Between the Scripts
 
-The sole difference between the `emby_tagger.py` and `jellyfin_tagger.py` scripts is the format required to update an item's tags.
+The sole difference between the `emby_tagmovies.py` and `jelly_tagmovies.py` scripts is the format required to update an item's tags.
 
-| Feature | `emby_tagger.py` | `jellyfin_tagger.py` |
+| Feature | `emby_tagmovies.py` | `jelly_tagmovies.py` |
 | :--- | :--- | :--- |
 | **Target Field** | `TagItems` | `Tags` |
 | **Data Format** | Requires a list of **Objects**, where each object has a `Name` key. | Requires a simple list of **Strings**. |
