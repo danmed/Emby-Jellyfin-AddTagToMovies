@@ -4,23 +4,24 @@ import requests
 import json
 
 # --- JELLYFIN CONFIGURATION ---
-JELLYFIN_SERVER_URL = "http://YOUR_JELLYFIN_IP:8096"  # Use your Jellyfin server URL
-JELLYFIN_API_KEY = "YOUR_JELLYFIN_API_KEY_HERE"      # Generate this in Jellyfin Dashboard > API Keys
-JELLYFIN_USER_ID = "YOUR_JELLYFIN_USER_ID_HERE"      # Find this in Jellyfin Dashboard > Users
-TAG_TO_ADD = "danflix"                              # The tag you want to add
+JELLYFIN_SERVER_URL = "http://YOUR_JELLYFIN_IP:8096"
+JELLYFIN_API_KEY = "YOUR_JELLYFIN_API_KEY_HERE"
+JELLYFIN_USER_ID = "YOUR_JELLYFIN_USER_ID_HERE"
+TAG_TO_ADD = "YOUR_TAG"
 # ------------------------------------------
 
 # Set up the headers for the API requests
 headers = {
-    'X-Emby-Token': JELLYFIN_API_KEY, # Jellyfin still uses 'X-Emby-Token' for the header key
+    'X-Emby-Token': JELLYFIN_API_KEY,
     'Content-Type': 'application/json',
 }
 
 def add_tag_to_all_movies():
     """
-    Fetches all movies and adds a global tag using the correct 'TagItems' field.
+    Fetches all movies on a Jellyfin server and adds a global tag
+    to the simple 'Tags' array.
     """
-    print("Starting Jellyfin script: Add Global Tag using TagItems")
+    print("Starting Jellyfin script: Add Global Tag")
 
     # 1. Get a list of all movie items for the specified user
     try:
@@ -47,21 +48,15 @@ def add_tag_to_all_movies():
             item_response.raise_for_status()
             item_data = item_response.json()
             
-            current_tag_items = item_data.get('TagItems', [])
+            # Use the simple 'Tags' field for Jellyfin
+            current_tags = item_data.get('Tags', [])
             
-            # Check if a tag with the desired name already exists
-            tag_exists = any(tag.get('Name') == TAG_TO_ADD for tag in current_tag_items)
-
-            if not tag_exists:
+            if TAG_TO_ADD not in current_tags:
                 print(f"Updating '{movie_name}' (ID: {movie_id}). Adding tag...")
                 
-                current_tag_items.append({'Name': TAG_TO_ADD})
-                item_data['TagItems'] = current_tag_items
-                
-                current_tags = item_data.get('Tags', [])
-                if TAG_TO_ADD not in current_tags:
-                    current_tags.append(TAG_TO_ADD)
-                    item_data['Tags'] = current_tags
+                # Add the new tag directly to the list
+                current_tags.append(TAG_TO_ADD)
+                item_data['Tags'] = current_tags
 
                 # POST the entire updated item back to the server
                 update_url = f"{JELLYFIN_SERVER_URL}/Items/{movie_id}"
