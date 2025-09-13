@@ -1,4 +1,4 @@
-# add_my_tag_jellyfin.py
+# jelly-tagmovies.py
 
 import requests
 import json
