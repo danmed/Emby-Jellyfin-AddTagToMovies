@@ -1,31 +1,31 @@
-# add_my_tag_jellyfin_simple.py
+# emby-tagmovies.py
 
 import requests
 import json
 
-# --- JELLYFIN CONFIGURATION ---
-JELLYFIN_SERVER_URL = "http://YOUR_JELLYFIN_IP:8096"
-JELLYFIN_API_KEY = "YOUR_JELLYFIN_API_KEY_HERE"
-JELLYFIN_USER_ID = "YOUR_JELLYFIN_USER_ID_HERE"
-TAG_TO_ADD = "danflix"
+# --- EMBY CONFIGURATION ---
+EMBY_SERVER_URL = "http://YOUR_EMBY_IP:8096"      # Use your Emby server URL
+EMBY_API_KEY = "YOUR_EMBY_API_KEY_HERE"      # Generate this in Emby Dashboard > API Keys
+EMBY_USER_ID = "YOUR_EMBY_USER_ID_HERE"      # Find this in Emby Dashboard > Users
+TAG_TO_ADD = "YOUR_TAG"                         # The tag you want to add
 # ------------------------------------------
 
 # Set up the headers for the API requests
 headers = {
-    'X-Emby-Token': JELLYFIN_API_KEY,
+    'X-Emby-Token': EMBY_API_KEY,
     'Content-Type': 'application/json',
 }
 
 def add_tag_to_all_movies():
     """
-    Fetches all movies on a Jellyfin server and adds a global tag
-    to the simple 'Tags' array.
+    Fetches all movies on an Emby server and adds a global tag
+    using the correct 'TagItems' field.
     """
-    print("Starting Jellyfin script: Add Global Tag")
+    print("Starting Emby script: Add Global Tag using TagItems")
 
     # 1. Get a list of all movie items for the specified user
     try:
-        get_movies_url = f"{JELLYFIN_SERVER_URL}/Users/{JELLYFIN_USER_ID}/Items?Recursive=true&IncludeItemTypes=Movie"
+        get_movies_url = f"{EMBY_SERVER_URL}/Users/{EMBY_USER_ID}/Items?Recursive=true&IncludeItemTypes=Movie"
         response = requests.get(get_movies_url, headers=headers)
         response.raise_for_status()
         movies = response.json().get('Items', [])
@@ -43,25 +43,32 @@ def add_tag_to_all_movies():
 
         try:
             # Get the full data for the movie item
-            get_item_url = f"{JELLYFIN_SERVER_URL}/Users/{JELLYFIN_USER_ID}/Items/{movie_id}"
+            get_item_url = f"{EMBY_SERVER_URL}/Users/{EMBY_USER_ID}/Items/{movie_id}"
             item_response = requests.get(get_item_url, headers=headers)
             item_response.raise_for_status()
             item_data = item_response.json()
             
-            # #######################################################
-            # ## THE FIX: Use the simple 'Tags' field for Jellyfin ##
-            # #######################################################
-            current_tags = item_data.get('Tags', [])
+            # Use the 'TagItems' field for Emby
+            current_tag_items = item_data.get('TagItems', [])
             
-            if TAG_TO_ADD not in current_tags:
+            # Check if a tag with the desired name already exists
+            tag_exists = any(tag.get('Name') == TAG_TO_ADD for tag in current_tag_items)
+
+            if not tag_exists:
                 print(f"Updating '{movie_name}' (ID: {movie_id}). Adding tag...")
                 
-                # Add the new tag directly to the list
-                current_tags.append(TAG_TO_ADD)
-                item_data['Tags'] = current_tags
+                # Add the new tag object to the TagItems list
+                current_tag_items.append({'Name': TAG_TO_ADD})
+                item_data['TagItems'] = current_tag_items
+                
+                # Also update the simple 'Tags' list for consistency
+                current_tags = item_data.get('Tags', [])
+                if TAG_TO_ADD not in current_tags:
+                    current_tags.append(TAG_TO_ADD)
+                    item_data['Tags'] = current_tags
 
                 # POST the entire updated item back to the server
-                update_url = f"{JELLYFIN_SERVER_URL}/Items/{movie_id}"
+                update_url = f"{EMBY_SERVER_URL}/Items/{movie_id}"
                 post_response = requests.post(update_url, headers=headers, data=json.dumps(item_data))
                 post_response.raise_for_status()
 
